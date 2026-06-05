@@ -22,6 +22,8 @@
 #define STEP_RESOLUTION     LEDC_TIMER_11_BIT
 #define STEP_DUTY           1024
 
+volatile uint8_t g_motor_run = 0;
+
 uint32_t g_step_freq = 10000; // 默认10kHz
 uint8_t g_auto_cycle = 0;     // 自动循环标志
 
@@ -109,6 +111,18 @@ static void set_microstep(uint32_t step)
     }
 }
 
+static void print_command_menu(void) {
+    printf("\n===== COMMAND =====\n");
+    printf("on     -> AUTO CYCLE (500ms forward -> 500ms reverse)\n");
+    printf("run    -> KEEP ROTATING\n");
+    printf("off    -> STOP\n");
+    printf("fX     -> Set Freq(X kHz)\n");
+    printf("MIN:1kHz MAX:39kHz\n");
+    printf("s8/s16/s32/s64 -> Set Microstep\n");
+    printf("clear  -> Clear screen and show this menu\n");
+    printf("===================\n");
+}
+
 void set_freq_auto(uint32_t freq_khz) {
     uint32_t hz = freq_khz * 1000;
     if (hz < 1000) hz = 1000;
@@ -127,10 +141,12 @@ void run_ms(uint8_t dir, uint32_t ms) {
     ledc_update_duty(STEP_SPEED_MODE, STEP_CHANNEL);
     vTaskDelay(pdMS_TO_TICKS(ms));
 
-    ledc_set_duty(STEP_SPEED_MODE, STEP_CHANNEL, 0);
-    ledc_update_duty(STEP_SPEED_MODE, STEP_CHANNEL);
-    gpio_set_level(EN_GPIO, 1);
-    vTaskDelay(pdMS_TO_TICKS(50));
+    if (!g_motor_run) {
+        ledc_set_duty(STEP_SPEED_MODE, STEP_CHANNEL, 0);
+        ledc_update_duty(STEP_SPEED_MODE, STEP_CHANNEL);
+        gpio_set_level(EN_GPIO, 1);
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
 }
 
 // 自动循环任务
@@ -149,13 +165,25 @@ void auto_cycle_task(void *pv) {
 }
 
 void motor_start(void) {
+    g_motor_run = 0;
     g_auto_cycle = 1;
     printf("AUTO CYCLE START\n");
 }
 
+void motor_run(void) {
+    g_auto_cycle = 0;
+    g_motor_run = 1;
+    gpio_set_level(DIR_GPIO, 0);
+    gpio_set_level(EN_GPIO, 0);
+    ledc_set_duty(STEP_SPEED_MODE, STEP_CHANNEL, STEP_DUTY);
+    ledc_update_duty(STEP_SPEED_MODE, STEP_CHANNEL);
+    printf("KEEP ROTATING START\n");
+}
+
 void motor_stop(void) {
     g_auto_cycle = 0;
-    printf("AUTO CYCLE STOP\n");
+    g_motor_run = 0;
+    printf("MOTOR STOP\n");
     
     ledc_set_duty(STEP_SPEED_MODE, STEP_CHANNEL, 0);
     ledc_update_duty(STEP_SPEED_MODE, STEP_CHANNEL);
@@ -178,13 +206,7 @@ void app_main(void) {
     uint16_t idx = 0;
     uint8_t ch;
 
-    printf("\n===== COMMAND =====\n");
-    printf("on     -> AUTO CYCLE (500ms forward -> 500ms reverse)\n");
-    printf("off    -> STOP\n");
-    printf("fX     -> Set Freq(X kHz)\n");
-    printf("MIN:1kHz MAX:39kHz\n");
-    printf("s8/s16/s32/s64 -> Set Microstep\n");
-    printf("===================\n");
+    print_command_menu();
 
     while (1) {
         if (uart_read_bytes(UART_PORT, &ch, 1, 0) > 0) {
@@ -205,8 +227,13 @@ void app_main(void) {
 
                     if (strcmp((char*)cmd_buf, "on") == 0) {
                         motor_start();
+                    } else if (strcmp((char*)cmd_buf, "run") == 0) {
+                        motor_run();
                     } else if (strcmp((char*)cmd_buf, "off") == 0) {
                         motor_stop();
+                    } else if (strcmp((char*)cmd_buf, "clear") == 0) {
+                        printf("\033[2J\033[H");
+                        print_command_menu();
                     } else if (cmd_buf[0] == 'f') {
                         uint32_t khz = atoi((char*)cmd_buf + 1);
                         set_freq_auto(khz);

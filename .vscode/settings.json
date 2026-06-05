@@ -4,16 +4,30 @@
   "idf.openOcdConfigs": [
     "board/esp32s3-builtin.cfg"
   ],
-  "idf.currentSetup": "C:\\esp\\v5.5.4\\esp-idf",
+  "idf.currentSetup": "D:\\app\\esp\\v5.5.4\\esp-idf",
+  "idf.espIdfPathWin": "D:\\app\\esp\\.espressif\\v5.5.4\\esp-idf",
+  "idf.toolsPathWin": "C:\\Espressif",
   "idf.customExtraVars": {
+    "IDF_TARGET": "esp32s3"
+  },
+  "cmake.configureEnvironment": {
+    "IDF_PATH": "D:\\app\\esp\\.espressif\\v5.5.4\\esp-idf",
+    "IDF_TOOLS_PATH": "C:\\Espressif",
+    "IDF_TARGET": "esp32s3"
+  },
+  "cmake.buildEnvironment": {
+    "IDF_PATH": "D:\\app\\esp\\.espressif\\v5.5.4\\esp-idf",
+    "IDF_TOOLS_PATH": "C:\\Espressif",
     "IDF_TARGET": "esp32s3"
   },
   "clangd.path": "C:\\Espressif\\tools\\esp-clang\\esp-19.1.2_20250312\\esp-clang\\bin\\clangd.exe",
   "clangd.arguments": [
     "--background-index",
     "--query-driver=**",
-    "--compile-commands-dir=e:\\esp32_project\\tmc2209\\build"
+    "--compile-commands-dir=d:\\project\\esp32_project\\tmc2209\\build"
   ],
-  "idf.portWin": "COM6",
-  "idf.flashType": "UART"
+  "idf.portWin": "COM3",
+  "idf.flashType": "UART",
+  "python-envs.defaultEnvManager": "ms-python.python:conda",
+  "python-envs.defaultPackageManager": "ms-python.python:conda"
 }
